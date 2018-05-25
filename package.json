@@ -79,11 +79,12 @@
     "keybindings": [
       {
         "command": "extension.pasteImage",
-        "key": "ctrl+alt+v",
-        "mac": "cmd+alt+v",
+        "key": "ctrl+shift+v",
+        "mac": "cmd+shift+v",
         "when": "editorTextFocus"
       }
-    ]
+    ],
+    "markdown.markdownItPlugins": true
   },
   "scripts": {
     "vscode:prepublish": "node ./node_modules/vscode/bin/compile",

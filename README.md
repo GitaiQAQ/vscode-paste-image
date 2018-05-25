@@ -26,6 +26,7 @@ Paste image directly from clipboard to markdown/asciidoc(or other file)!
     - `${projectRoot}` will be replace by path of the project opened in vscode.
     - `${currentFileName}` will be replace by current file name with ext.
     - `${currentFileNameWithoutExt}` will be replace by current file name without ext.
+    - `$res` will be replace by current file name with ext `.resource`.
 
     Default value is `${currentFileDir}`.
 

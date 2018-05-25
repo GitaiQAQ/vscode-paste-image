@@ -43,6 +43,37 @@ export function activate(context: vscode.ExtensionContext) {
     });
 
     context.subscriptions.push(disposable);
+
+    return {
+        extendMarkdownIt(md: any) {
+            return md.use((md, options) => {
+                const image_ = md.renderer.rules.image;
+                md.renderer.rules.image = function (tokens, idx, options, env, self) {
+                    let html = image_(tokens, idx, options, env, self);
+                    if ( /\$res/.test(html)) {
+                        let editor = vscode.window.activeTextEditor;
+                        if (!editor) return;
+
+                        let fileUri = editor.document.uri;
+                        if (!fileUri) return;
+                        if (fileUri.scheme === 'untitled') {
+                            Logger.showInformationMessage('Before paste image, you need to save current edit file first.');
+                            return;
+                        }
+                        let filePath = fileUri.fsPath;
+
+                        let ext = path.extname(filePath);
+                        let fileName = path.basename(filePath);
+                        let fileNameWithoutExt = path.basename(filePath, ext);
+
+                        html = html.replace(/\$res/g, fileNameWithoutExt + ".resource");
+                    }
+                    return html;
+                  }
+                
+            });
+        }
+    }
 }
 
 export function deactivate() {
@@ -138,7 +169,7 @@ class Paster {
                     return;
                 }
 
-                imagePath = this.renderFilePath(editor.document.languageId, this.basePathFromConfig, imagePath, this.forceUnixStyleSeparatorFromConfig, this.prefixFromConfig, this.suffixFromConfig);
+                imagePath = this.renderFilePath(editor.document.languageId, this.basePathFromConfig, this.replace2Variable(imagePath), this.forceUnixStyleSeparatorFromConfig, this.prefixFromConfig, this.suffixFromConfig);
 
                 editor.edit(edit => {
                     let current = editor.selection;
@@ -166,7 +197,7 @@ class Paster {
         if (!selectText) {
             imageFileName = moment().format("Y-MM-DD-HH-mm-ss") + ".png";
         } else {
-            imageFileName = selectText + ".png";
+            imageFileName = selectText.replace(/\s?/g, "_") + ".png";
         }
 
         // image output path
@@ -295,7 +326,7 @@ class Paster {
      * e.g. in markdown image file path will render to ![](path)
      */
     public static renderFilePath(languageId: string, basePath: string, imageFilePath: string, forceUnixStyleSeparator: boolean, prefix: string, suffix: string): string {
-        if (basePath) {
+        if (basePath && !imageFilePath.startsWith("$res")) {
             imageFilePath = path.relative(basePath, imageFilePath);
         }
 
@@ -321,10 +352,16 @@ class Paster {
         let fileName = path.basename(curFilePath);
         let fileNameWithoutExt = path.basename(curFilePath, ext);
 
+        pathStr = pathStr.replace("$res", "./${currentFileNameWithoutExt}.resource");
         pathStr = pathStr.replace(this.PATH_VARIABLE_PROJECT_ROOT, projectRoot);
         pathStr = pathStr.replace(this.PATH_VARIABLE_CURRNET_FILE_DIR, currentFileDir);
         pathStr = pathStr.replace(this.PATH_VARIABLE_CURRNET_FILE_NAME, fileName);
         pathStr = pathStr.replace(this.PATH_VARIABLE_CURRNET_FILE_NAME_WITHOUT_EXT, fileNameWithoutExt);
+        return pathStr;
+    }
+
+    public static replace2Variable(pathStr: string): string {
+        pathStr = pathStr.replace(/^.*\.resource/, "$res");
         return pathStr;
     }
 }
